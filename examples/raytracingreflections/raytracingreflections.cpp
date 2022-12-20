@@ -159,13 +159,26 @@ public:
 			0.0f, 1.0f, 0.0f, 0.0f,
 			0.0f, 0.0f, 1.0f, 0.0f };
 
+		VkTransformMatrixKHR transformMatrix2 = {
+			1.0f, 0.0f, 0.0f, 1.0f,
+			0.0f, 1.0f, 0.0f, 1.0f,
+			0.0f, 0.0f, 1.0f, 1.0f };
+
+		VkAccelerationStructureInstanceKHR instances[2];
+
 		VkAccelerationStructureInstanceKHR instance{};
 		instance.transform = transformMatrix;
 		instance.instanceCustomIndex = 0;
-		instance.mask = 0xFF;
+		instance.mask = 0;
 		instance.instanceShaderBindingTableRecordOffset = 0;
 		instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
 		instance.accelerationStructureReference = bottomLevelAS.deviceAddress;
+
+		instances[0] = instances[1] = instance;
+
+		instances[1].instanceCustomIndex = 1;
+		instances[1].transform = transformMatrix2;
+		instances[1].mask = 0xff;
 
 		// Buffer for instance data
 		vks::Buffer instancesBuffer;
@@ -173,8 +186,8 @@ public:
 			VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 			&instancesBuffer,
-			sizeof(VkAccelerationStructureInstanceKHR),
-			&instance));
+			sizeof(instances),
+			&instances));
 
 		VkDeviceOrHostAddressConstKHR instanceDataDeviceAddress{};
 		instanceDataDeviceAddress.deviceAddress = getBufferDeviceAddress(instancesBuffer.buffer);
@@ -193,7 +206,7 @@ public:
 		accelerationStructureBuildGeometryInfo.geometryCount = 1;
 		accelerationStructureBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
 
-		uint32_t primitive_count = 1;
+		uint32_t primitive_count = 2;
 
 		VkAccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfo = vks::initializers::accelerationStructureBuildSizesInfoKHR();
 		vkGetAccelerationStructureBuildSizesKHR(
@@ -218,7 +231,7 @@ public:
 		accelerationBuildGeometryInfo.scratchData.deviceAddress = scratchBuffer.deviceAddress;
 
 		VkAccelerationStructureBuildRangeInfoKHR accelerationStructureBuildRangeInfo{};
-		accelerationStructureBuildRangeInfo.primitiveCount = 1;
+		accelerationStructureBuildRangeInfo.primitiveCount = 2;
 		accelerationStructureBuildRangeInfo.primitiveOffset = 0;
 		accelerationStructureBuildRangeInfo.firstVertex = 0;
 		accelerationStructureBuildRangeInfo.transformOffset = 0;
